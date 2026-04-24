@@ -156,9 +156,9 @@ CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_ENABLE_UTC = False
 
 CELERY_BEAT_SCHEDULE = {
-    "teste-a-cada-30s": {
+    "teste-a-cada-4h": {
         "task": "core.orchestrator.test_log",
-        "schedule": 30.0,
+        "schedule": 14400.0,  # 4 horas em segundos
     },
     "scrape-imdb-movies-every-2h": {
         "task": "core.orchestrator.scrape_imdb_movies",
