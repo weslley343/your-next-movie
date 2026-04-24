@@ -28,7 +28,22 @@ python manage.py collectstatic --noinput
 
 # Cria superusuário se não existir
 echo "Criando superusuário..."
-python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='weslley').exists() or User.objects.create_superuser('weslley', 'weddav97@gmail.com', 'iopioip777777758')"
+python manage.py shell -c "
+import os
+from django.contrib.auth import get_user_model
+User = get_user_model()
+username = os.getenv('DJANGO_SUPERUSER_USERNAME')
+email = os.getenv('DJANGO_SUPERUSER_EMAIL')
+password = os.getenv('DJANGO_SUPERUSER_PASSWORD')
+if username and password:
+    if not User.objects.filter(username=username).exists():
+        User.objects.create_superuser(username, email, password)
+        print(f'Superusuário {username} criado com sucesso.')
+    else:
+        print(f'Superusuário {username} já existe.')
+else:
+    print('Variáveis de ambiente para superusuário não configuradas.')
+"
 
 # Executa o comando que foi passado para o container (ex: gunicorn ou celery)
 echo "Iniciando comando: $@"

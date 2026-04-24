@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-w7$nadtc_4f0vdzk3qfsif=m)4ihveuyl=4-a1cw0^&7(asx+c
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     
 
     #locals
-    'core',
+    # 'core',
     'movies',
     'system',
 ]
@@ -119,7 +119,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "America/Sao_Paulo"
+USE_TZ = True
 
 USE_I18N = True
 
@@ -132,9 +133,32 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# Celery / Redis
+CELERY_BROKER_URL = os.getenv(
+    "CELERY_BROKER_URL",
+    "redis://redis:6379/0"
+)
+
+CELERY_RESULT_BACKEND = os.getenv(
+    "CELERY_RESULT_BACKEND",
+    "redis://redis:6379/1"
+)
+
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_ENABLE_UTC = False
+
 CELERY_BEAT_SCHEDULE = {
     "teste-a-cada-30s": {
-        "task": "core.tasks.test_log",
-        "schedule": 30,
+        "task": "core.orchestrator.test_log",
+        "schedule": 30.0,
+    },
+    "scrape-imdb-movies-every-2h": {
+        "task": "core.orchestrator.scrape_imdb_movies",
+        "schedule": 7200.0,  # 2 horas em segundos
     }
 }
