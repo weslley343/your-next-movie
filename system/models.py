@@ -11,7 +11,6 @@ class SystemLog(models.Model):
     message = models.TextField()
     source = models.CharField(max_length=100, blank=True, null=True)
 
-    # NOVO CAMPO
     context = models.TextField(blank=True, null=True)
     instruction = models.TextField(blank=True, null=True)
 
