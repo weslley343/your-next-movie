@@ -12,9 +12,13 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env
+load_dotenv(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
@@ -156,12 +160,16 @@ CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_ENABLE_UTC = False
 
 CELERY_BEAT_SCHEDULE = {
-    "teste-a-cada-4h": {
+    "teste-a-cada-30s": {
         "task": "core.orchestrator.test_log",
-        "schedule": 14400.0,  # 4 horas em segundos
+        "schedule": 30.0,
     },
     "scrape-imdb-movies-every-2h": {
         "task": "core.orchestrator.scrape_imdb_movies",
         "schedule": 7200.0,  # 2 horas em segundos
+    },
+    "clean-health-check-logs-every-10m": {
+        "task": "core.orchestrator.clean_health_check_logs",
+        "schedule": 600.0,  # 10 minutos em segundos
     }
 }

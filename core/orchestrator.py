@@ -5,7 +5,7 @@ def test_log():
     from system.models import SystemLog
     SystemLog.objects.create(
         level="INFO",
-        message="Celery executou a task!",
+        message="Celery está saudável!",
         source="celery"
     )
     return "ok"
@@ -14,12 +14,16 @@ def test_log():
 def scrape_imdb_movies():
     """
     Task to scrape popular movies from IMDB.
-    Currently only logs the execution.
+    """
+    from core.services.scrape_movies import run_imdb_scraper
+    run_imdb_scraper()
+    return "Scraping process finished"
+
+@shared_task
+def clean_health_check_logs():
+    """
+    Task to filter and delete logs with the message 'Celery está saudável!'.
     """
     from system.models import SystemLog
-    SystemLog.objects.create(
-        level="INFO",
-        message="Iniciando scraping de filmes do IMDB...",
-        source="celery.scraper"
-    )
-    return "Scraping task started"
+    deleted_count, _ = SystemLog.objects.filter(message="Celery está saudável!").delete()
+    return f"Deleted {deleted_count} health check logs"

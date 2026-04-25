@@ -45,6 +45,12 @@ else:
     print('Variáveis de ambiente para superusuário não configuradas.')
 "
 
+# Executa o scraper se solicitado via variável de ambiente
+if [ "$RUN_SCRAPER_ON_STARTUP" = "true" ]; then
+    echo "Verificando necessidade de rodar o scraper..."
+    python manage.py run_scraper_if_needed
+fi
+
 # Executa o comando que foi passado para o container (ex: gunicorn ou celery)
 echo "Iniciando comando: $@"
 exec "$@"
