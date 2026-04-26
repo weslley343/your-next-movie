@@ -15,3 +15,15 @@ class Movie(models.Model):
 
     def __str__(self):
         return self.titulo
+
+class AIInsight(models.Model):
+    titulo = models.CharField(max_length=255)
+    introducao = models.TextField()
+    desenvolvimento = models.TextField()
+    conclusao = models.TextField()
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.titulo

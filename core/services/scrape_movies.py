@@ -162,7 +162,13 @@ def fetch_popular_movies_list(driver):
 
 def scrape_movie_details(driver, url):
     driver.get(url)
-    time.sleep(random.uniform(1.5, 3.0))
+    
+    # Scroll suave para carregar seções dinâmicas (Gêneros ficam no final)
+    driver.execute_script("window.scrollTo(0, document.body.scrollHeight / 2);")
+    time.sleep(1.0)
+    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+    time.sleep(2.0)
+
     soup = BeautifulSoup(driver.page_source, "lxml")
 
     # Sinopse
@@ -176,11 +182,27 @@ def scrape_movie_details(driver, url):
         span = boxoffice.find("span", class_="ipc-metadata-list-item__list-content-item")
         if span: faturamento_str = span.get_text(strip=True)
 
-    # Gêneros
+    # Gêneros (Estratégia Ultra-Robusta)
     generos = []
-    genre_list = soup.find("li", {"data-testid": "storyline-genres"})
-    if genre_list:
-        generos = [a.get_text(strip=True) for a in genre_list.find_all("a")]
+    # 1. Tenta pelo data-testid padrão
+    genre_section = soup.find("li", {"data-testid": "storyline-genres"})
+    if not genre_section:
+        genre_section = soup.find("div", {"data-testid": "genres"})
+    
+    # 2. Fallback: Procurar pelo texto "Gêneros" ou "Genres"
+    if not genre_section:
+        label = soup.find(lambda tag: tag.name in ["span", "li"] and tag.text in ["Gêneros", "Genres"])
+        if label:
+            genre_section = label.find_parent("li") or label.find_parent("div")
+
+    if genre_section:
+        links = genre_section.find_all("a")
+        generos = [a.get_text(strip=True) for a in links if a.get_text(strip=True) and ("genres=" in a.get('href', '') or "ipc-metadata-list-item" in str(a.get('class', '')))]
+
+    # 3. Fallback Final: Pegar QUALQUER link que contenha genres= no href na página toda
+    if not generos:
+        all_genre_links = soup.find_all("a", href=lambda x: x and "genres=" in x)
+        generos = list(set([a.get_text(strip=True) for a in all_genre_links if a.get_text(strip=True)]))
 
     # Data de Lançamento
     data_str = None
@@ -253,14 +275,25 @@ def run_imdb_scraper():
                     }
                 )
                 count += 1
-                logger.info(f"Filme processado: {movie_basic['titulo']}")
+                msg_success = f"Filme processado e salvo: {movie_basic['titulo']} (Ranking {movie_basic['ranking']})"
+                logger.info(msg_success)
+                SystemLog.objects.create(level="INFO", message=msg_success, source="scraper")
                 
             except Exception as e:
-                logger.error(f"Erro ao processar filme {movie_basic['titulo']}: {e}")
+                msg_error = f"Erro ao processar filme {movie_basic.get('titulo', 'Desconhecido')}: {str(e)}"
+                logger.error(msg_error)
+                SystemLog.objects.create(level="ERROR", message=msg_error, source="scraper")
                 continue
         
         SystemLog.objects.create(level="INFO", message=f"Scraping finalizado. {count} filmes atualizados.", source="scraper")
         
+        # Disparar geração de insights automaticamente após o scraper
+        try:
+            from core.services.movie_insights import generate_movie_insights
+            generate_movie_insights()
+        except Exception as ai_e:
+            logger.error(f"Erro ao disparar insights após scraper: {ai_e}")
+
     except Exception as e:
         SystemLog.objects.create(level="ERROR", message=f"Falha crítica no scraper: {str(e)}", source="scraper")
         logger.error(f"Critical error in scraper: {e}")

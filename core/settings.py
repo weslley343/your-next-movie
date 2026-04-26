@@ -48,6 +48,8 @@ INSTALLED_APPS = [
 
     #third-party
     'rest_framework',
+    'django_filters',
+    'drf_spectacular',
     
 
     #locals
@@ -139,6 +141,25 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Django REST Framework
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Your Next Movie API',
+    'DESCRIPTION': 'API para consulta e gerenciamento de filmes populares do IMDB.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
 
 # Celery / Redis
 CELERY_BROKER_URL = os.getenv(

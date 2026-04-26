@@ -105,6 +105,11 @@ def scrape_movie_details(driver, url):
     logging.info(f"Acessando detalhes: {url}")
 
     driver.get(url)
+    
+    # Scroll suave para carregar seções dinâmicas (Gêneros/Tech Specs)
+    driver.execute_script("window.scrollTo(0, document.body.scrollHeight / 2);")
+    time.sleep(1.5)
+    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
     time.sleep(2)
 
     soup = BeautifulSoup(driver.page_source, "lxml")
@@ -126,12 +131,36 @@ def scrape_movie_details(driver, url):
             faturamento = span.get_text(strip=True)
 
     # ============================
-    # GÊNEROS
+    # GÊNEROS (Estratégia Ultra-Robusta)
     # ============================
-    generos = []
-    genre_list = soup.find("li", {"data-testid": "storyline-genres"})
-    if genre_list:
-        generos = [a.get_text(strip=True) for a in genre_list.find_all("a")]
+    generos_list = []
+    
+    # 1. Tenta pelo data-testid padrão
+    genre_section = soup.find("li", {"data-testid": "storyline-genres"})
+    if not genre_section:
+        genre_section = soup.find("div", {"data-testid": "genres"})
+    
+    # 2. Fallback: Procurar pelo texto "Gêneros" ou "Genres"
+    if not genre_section:
+        label = soup.find(lambda tag: tag.name in ["span", "li"] and tag.text in ["Gêneros", "Genres"])
+        if label:
+            genre_section = label.find_parent("li") or label.find_parent("div")
+
+    if genre_section:
+        # Pega todos os links dentro da seção encontrada
+        links = genre_section.find_all("a")
+        # Filtra links que tenham cara de gênero (contendo 'genres=' no link ou classes específicas)
+        generos_list = [a.get_text(strip=True) for a in links if a.get_text(strip=True) and ("genres=" in a.get('href', '') or "ipc-metadata-list-item" in str(a.get('class', '')))]
+
+    # 3. Fallback Final: Pegar QUALQUER link que contenha genres= no href na página toda
+    if not generos_list:
+        all_genre_links = soup.find_all("a", href=lambda x: x and "genres=" in x)
+        generos_list = list(set([a.get_text(strip=True) for a in all_genre_links if a.get_text(strip=True)]))
+
+    if not generos_list:
+        logging.warning("Nenhum gênero capturado para este filme.")
+    else:
+        logging.info(f"Gêneros encontrados: {', '.join(generos_list)}")
 
     # ============================
     # DATA DE LANÇAMENTO
@@ -168,7 +197,7 @@ def scrape_movie_details(driver, url):
     return (
         sinopse,
         faturamento,
-        ", ".join(generos),
+        ", ".join(generos_list),
         data_lancamento,
         duracao_minutos,
         proporcao
@@ -190,10 +219,9 @@ def main():
         for row in reader:
             filmes.append(row)
 
-    # Para testes rápidos, vamos limitar a 3 filmes
-    # filmes = filmes[:3]
+    # Para testes rápidos, vamos limitar a 4 filmes
+    filmes = filmes[:4]
     
-    random.shuffle(filmes)
     driver = create_driver()
 
     with open(OUTPUT_CSV, "w", newline="", encoding="utf-8") as f:
@@ -211,29 +239,28 @@ def main():
         ])
 
         for movie in filmes:
-            wait_time = random.randint(3, 6) # Reduzi o tempo para o teste ser mais rápido
+            wait_time = random.randint(2, 4)
             logging.info(f"Aguardando {wait_time}s...")
             time.sleep(wait_time)
 
             try:
-                (
-                    sinopse,
-                    faturamento,
-                    generos,
-                    data_lancamento,
-                    duracao_minutos,
-                    proporcao
-                ) = scrape_movie_details(driver, movie["link"])
+                res = scrape_movie_details(driver, movie["link"])
+                
+                # Se não veio gênero, salva o HTML para debug
+                if not res[2]:
+                    with open(f"debug_{movie['ranking']}.html", "w") as df:
+                        df.write(driver.page_source)
+                    logging.warning(f"HTML de debug salvo em debug_{movie['ranking']}.html")
 
                 writer.writerow([
                     movie["ranking"],
                     movie["titulo"],
-                    sinopse,
-                    faturamento,
-                    generos,
-                    data_lancamento,
-                    duracao_minutos,
-                    proporcao,
+                    res[0], # sinopse
+                    res[1], # faturamento
+                    res[2], # generos
+                    res[3], # data
+                    res[4], # duracao
+                    res[5], # proporcao
                     movie["link"]
                 ])
 

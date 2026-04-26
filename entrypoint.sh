@@ -18,17 +18,19 @@ done
 
 echo "Banco de dados pronto!"
 
-# Executa as migrations
-echo "Executando migrations..."
-python manage.py migrate --noinput
+# Executa tarefas de inicialização apenas se RUN_MIGRATIONS for true
+if [ "$RUN_MIGRATIONS" = "true" ]; then
+    # Executa as migrations
+    echo "Executando migrations..."
+    python manage.py migrate --noinput
 
-# Coleta arquivos estáticos
-echo "Coletando arquivos estáticos..."
-python manage.py collectstatic --noinput
+    # Coleta arquivos estáticos
+    echo "Coletando arquivos estáticos..."
+    python manage.py collectstatic --noinput
 
-# Cria superusuário se não existir
-echo "Criando superusuário..."
-python manage.py shell -c "
+    # Cria superusuário se não existir
+    echo "Criando superusuário..."
+    python manage.py shell -c "
 import os
 from django.contrib.auth import get_user_model
 User = get_user_model()
@@ -44,6 +46,14 @@ if username and password:
 else:
     print('Variáveis de ambiente para superusuário não configuradas.')
 "
+else
+    echo "Aguardando as migrações serem aplicadas pelo container principal..."
+    until python manage.py migrate --check > /dev/null 2>&1; do
+      echo "Migrações ainda pendentes... aguardando 2 segundos"
+      sleep 2
+    done
+    echo "Migrações aplicadas!"
+fi
 
 # Executa o scraper se solicitado via variável de ambiente
 if [ "$RUN_SCRAPER_ON_STARTUP" = "true" ]; then

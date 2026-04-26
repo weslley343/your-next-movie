@@ -16,8 +16,12 @@ def scrape_imdb_movies():
     Task to scrape popular movies from IMDB.
     """
     from core.services.scrape_movies import run_imdb_scraper
+    from core.services.movie_insights import generate_movie_insights
+    
     run_imdb_scraper()
-    return "Scraping process finished"
+    generate_movie_insights()
+    
+    return "Scraping and Insight generation process finished"
 
 @shared_task
 def clean_health_check_logs():
