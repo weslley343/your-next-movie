@@ -181,16 +181,16 @@ CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_ENABLE_UTC = False
 
 CELERY_BEAT_SCHEDULE = {
-    "teste-a-cada-30s": {
-        "task": "core.orchestrator.test_log",
-        "schedule": 30.0,
-    },
+    # "teste-a-cada-30s": {
+    #     "task": "core.orchestrator.test_log",
+    #     "schedule": 30.0,
+    # },
     "scrape-imdb-movies-every-2h": {
         "task": "core.orchestrator.scrape_imdb_movies",
         "schedule": 7200.0,  # 2 horas em segundos
     },
-    "clean-health-check-logs-every-10m": {
-        "task": "core.orchestrator.clean_health_check_logs",
-        "schedule": 600.0,  # 10 minutos em segundos
-    }
+    # "clean-health-check-logs-every-10m": {
+    #     "task": "core.orchestrator.clean_health_check_logs",
+    #     "schedule": 600.0,  # 10 minutos em segundos
+    # }
 }

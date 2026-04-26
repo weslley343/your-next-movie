@@ -91,10 +91,10 @@ def prepare_data():
         logger.warning("Nenhum filme encontrado para gerar insights.")
         return None, None
     
-    # REMOVIDO: Sinopse (economiza muitos tokens)
     movies_data = [{
         "rank": m.ranking,
         "title": m.titulo,
+        "sinopse": m.sinopse,
         "gross": f"${m.faturamento_bruto_mundial:,}" if m.faturamento_bruto_mundial else "N/A",
         "genre": m.generos
     } for m in movies]
@@ -104,11 +104,12 @@ def prepare_data():
 
 def build_prompt(movies_data, last_titles):
     return f"""
-Analise estes dados de 20 filmes e crie um insight curto para produtores:
+Analise estes dados de filmes populares e crie um insight de tendências para produtores:
 Dados: {json.dumps(movies_data, ensure_ascii=False)}
-Evite: {last_titles}
+Evite repetir insights já feitos. Veja os ultimos títulos insights para não repetir, o título deve ser afirmativo e você não deve mencionar quantidade dos filmes analisados:
+Últimos insights: {last_titles}
 
-JSON campos: titulo, introducao (1 parágrafo), desenvolvimento (2 parágrafos), conclusao (1 parágrafo).
+JSON campos: titulo, introducao (1 parágrafo), desenvolvimento (1 parágrafo), conclusao (1 parágrafo).
 """
 
 def save_insight(content, source):

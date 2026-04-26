@@ -22,7 +22,7 @@ services:
     build: .
     container_name: ynm_web
     restart: on-failure
-    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000 --timeout 150
     ports:
       - "8000:8000"
     volumes:
